@@ -4,81 +4,101 @@ author: "Mizuki Yashiro"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
+Github: https://github.com/mizukiyashiro/gov51-ps2
+
+# Part 1: The Original Study
+
+## 1.1: Exploring the Experiment
+
+## Q1.1
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 ```
 
-```{r}
+```{r q1-1-1 load packages}
 gay <- read_csv("data/raw/gay.csv")
-gay_r <- read_csv("data/raw/gayreshaped.csv")
-ccap <- read_csv("data/raw/ccap2012.csv")
 ```
 
-# Part 1: The Original Study
-
-## Q1.1
-
-Total observations
-```{r}
+```{r q1-1}
+# Total observations
 nrow(gay)
-```
 
-Unique study values
-```{r}
+# Unique study values
 n_distinct(gay$study)
-```
 
-List treatment conditions
-```{r}
+# List treatment conditions
 unique(gay$treatment)
 ```
-There are 69,592 total observations in `gay.csv`. The variable `study` takes 2 unique values (Study 1 and Study 2). The five treatment conditions are:
-1. No Contact, 2. Recycling Script by Gay Canvasser, 3. Same-Sex Marriage Script by Gay Canvasser, 4. Recycling Script by Straight Canvasser, 5. Same-Sex Marriage Script by Straight Canvasser.
+
+There are 69,592 total observations in `gay.csv`.
+
+The variable `study` takes 2 unique values (Study 1 and Study 2). 
+
+The five treatment conditions are:
+1. No Contact
+2. Recycling Script by Gay Canvasser
+3. Same-Sex Marriage Script by Gay Canvasser
+4. Recycling Script by Straight Canvasser
+5. Same-Sex Marriage Script by Straight Canvasser.
 
 ## Q1.2
 
 ```{r q1-2}
+# Filter to Study 1, Wave 1 Only
 s1w1 <- gay |>
   filter(study == 1, wave == 1)
 
+# Calculate the mean of ssm for each treatment group
 s1w1 |>
   group_by(treatment) |>
-  summarize(mean_ssm = mean(ssm), .groups = "drop") |>
+  summarize(mean_ssm = mean(ssm), n = n(), .groups = "drop") |>
   arrange(desc(mean_ssm))
 ```
-In Study 1, Wave 1, the treatment group with the highest average support for same-sex marriage is the "Recycling Script by Gay Canvasser" group, with a mean of 3.130975. However, the differences across groups are small, and all means fall between 3.013474 and 3.130975. This suggests that the groups look fairly similar at baseline, which is consistent with successful random assignment.
+
+In Study 1, Wave 1, the treatment group with the highest average support for same-sex marriage is the "Recycling Script by Gay Canvasser" group, with a mean of 3.130975. However, the differences across groups are small, and all means fall between 3.013474 and 3.130975. This suggests that the groups look fairly similar at baseline. 
+
+I began by using "gay |>" to show that I started with the full dataset 'gay', including all studies, waves, and treatment group. Using 'filter(study == 1, wave == 1)', I kept only the rows where study is 1 and wave is 1. This isolates the baseline, wave 1, for study 1. I then saved the smaller dataset into a new object called 's1w1'. Then, I took the filtered baseline dataset and began to analyze it using "group_by(treatment)" to split the data into separate groups based on the treatment column. This makes groups like no contact, same-sex marriage, etc. " summarize(mean_ssm = mean(ssm), .groups = "drop")" makes it so that for each treatment bucket, a mean of 'ssm' will be computed. It also makes a summary table where each row is one treatment group with a column called "mean_ssm". ".groups = "drop"" part tells R to stop treating it as grouped data after summarizing. Finally, "arrange(desc(mean_ssm))" sorts the summary table from the highest "mean_ssm" value to the lowest.
 
 ## Q1.3
 
 ```{r q1-3}
+# Calculate the SD of ssm for each treatment group
 s1w1 |>
   group_by(treatment) |>
   summarize(sd_ssm = sd(ssm), .groups = "drop")
 ```
 
-The standard deviations of `ssm` are very similar across all treatment groups, ranging from 1.666099 to 1.702533. This suggests that the spread of attitudes toward same-sex marriage is comparable across groups at baseline. In a randomized experiment, we expect not only similar means but also similar variability across groups. Similar standard deviations support the idea that the groups were successfully randomized and are comparable before any treatment occurs.
+The standard deviations of `ssm` across the treatment groups in Study 1, Wave 1 range from 1.666099 to 1.702533. These values are extremely similar across groups, indicating that not only are the average levels of support for same-sex marriage comparable at baseline, but the spread of opinions is also nearly identical.
+
+This similarity in variability is important in a randomized experiment because successful random assignment should produce groups that are comparable in both central tendency and dispersion. If one group had a much larger or smaller standard deviation, it could indicate systematic differences in the composition of that group. For example, one group could contain more ideologically extreme respondents. The nearly identical standard deviations suggest that the groups are similar not only in their average attitudes but also in the distribution of attitudes, reinforcing the credibility of the randomization process. Although we recognize that the nearly identical standard deviations were due to the ingenuity of the original study, this is how I would appraoch the similarity if I were to treat the data as being correct.
 
 ## Q1.4
 
 ```{r q1-4}
+# Create summary data frame with the means by treatment group
 s1w1_means <- s1w1 |>
   group_by(treatment) |>
   summarize(mean_ssm = mean(ssm), .groups = "drop")
 
+# Create barplot
 ggplot(s1w1_means, aes(x = reorder(treatment, mean_ssm), y = mean_ssm)) +
   geom_col() +
   coord_flip() +
   labs(
     title = "Study 1, Wave 1: Mean Support for Same-Sex Marriage",
     x = "Treatment Group",
-    y = "Mean SSM (1–5 scale)"
-  )
+    y = "Mean SSM (1–5 scale)")
 ```
 
-The bar plot shows that the mean levels of support for same-sex marriage are very similar across all treatment groups at baseline. The differences are small (3.013474 and 3.130975), and no group stands out dramatically. This visual similarity reinforces the idea that the random assignment appears successful, as the groups look comparable before any treatment effects could occur.
+The bar plot shows that the mean levels of support for same-sex marriage are very similar across all treatment groups at baseline. The differences are small (3.013474 to 3.130975), and no group stands out dramatically. This visual similarity helps to further reinforce the idea that the random assignment appears to be successful, since the groups look comparable before any treatment effects could occur.
+
+## 1.2: Checking Balance and Comparing Outcomes
 
 ## Q1.5
+
 ```{r q1-5}
+# Find the mean, SD, and n for ssm for a control group (no contact), and the treatment group (same-sex marriage script by gay canvasser)
 comp <- s1w1 |>
   filter(treatment %in% c("Same-Sex Marriage Script by Gay Canvasser", 
                           "No Contact")) |>
@@ -87,13 +107,14 @@ comp <- s1w1 |>
     mean_ssm = mean(ssm),
     sd_ssm = sd(ssm),
     n = n(),
-    .groups = "drop"
-  )
+    .groups = "drop")
 
 comp
 ```
 
 ```{r q1-5-std-diff}
+# Calculate the standardized difference in means
+
 m_t <- comp$mean_ssm[comp$treatment == "Same-Sex Marriage Script by Gay Canvasser"]
 m_c <- comp$mean_ssm[comp$treatment == "No Contact"]
 
@@ -101,18 +122,23 @@ s_t <- comp$sd_ssm[comp$treatment == "Same-Sex Marriage Script by Gay Canvasser"
 s_c <- comp$sd_ssm[comp$treatment == "No Contact"]
 
 std_diff <- (m_t - m_c) / sqrt((s_t^2 + s_c^2)/2)
-
 std_diff
 ```
 
-The standardized difference in means between the “Same-Sex Marriage Script by Gay Canvasser” group and the “No Contact” group is -0.01049935. This is far below the 0.25 threshold typically used to assess balance in randomized experiments. This indicates that the two groups are extremely similar at baseline. Because the groups are well balanced before treatment, any differences observed in later waves can more plausibly be attributed to the treatment rather than pre-existing differences.
+The standardized difference in baseline support for same-sex marriage between the “Same-Sex Marriage Script by Gay Canvasser” group and the “No Contact” group is -0.01049935. In terms of absolute value, this is extremely small and far below the conventional 0.25 threshold used to assess meaningful imbalance in randomized experiments.
+
+This indicates that the two groups are essentially identical at baseline in terms of their average attitudes toward same-sex marriage. A standardized difference of means this close to zero means that any difference between the groups is negligible relative to the overall variability in attitudes within the sample (in this particular example, the SMD is approximatelhy -0.01, which is far below the conventional baseline of 0.25). 
+
+Baseline balance is important in a randomized experiment because it supports the assumption that treatment assignment was not systematically related to pre-existing attitudes. Under the assumption that this is a real experiment, the groups appear well balanced before any treatment occurs. Thus, any differences observed in later waves should be able to be more credibly attributed to the treatment itself rather than to initial differences between respondents.
 
 ## Q1.6
 
 ```{r q1-6}
+# Filter to Study 1, Wave 2
 s1w2 <- gay |>
   filter(study == 1, wave == 2)
 
+# Calculate the mean for the control group (no contact), and for the treatment group (same-sex marriage script by gay canvasser)
 s1w2 |>
   filter(treatment %in% c("Same-Sex Marriage Script by Gay Canvasser",
                           "No Contact")) |>
@@ -122,6 +148,7 @@ s1w2 |>
 
 
 ```{r q1-6-diff}
+# Calculate the difference in means between the groups
 m_t2 <- s1w2 |>
   filter(treatment == "Same-Sex Marriage Script by Gay Canvasser") |>
   summarize(m = mean(ssm)) |>
@@ -133,17 +160,24 @@ m_c2 <- s1w2 |>
   pull(m)
 
 diff_wave2 <- m_t2 - m_c2
-
 diff_wave2
 ```
 
-In Study 1, Wave 2, the mean support for same-sex marriage is approximately 3.14 in the “Same-Sex Marriage Script by Gay Canvasser” group and 3.04 in the “No Contact” group. The difference in means (treated minus control) is 0.09987463 points. Because the two groups were well balanced at baseline, this difference suggests a treatment effect. If the data were valid, we would interpret this as evidence that a single 20-minute conversation with a gay canvasser increased support for same-sex marriage.
+In Study 1, Wave 2, the mean support for same-sex marriage is 3.139489 in the “Same-Sex Marriage Script by Gay Canvasser” group and 3.039615 in the “No Contact” group.
+
+The difference in means (treated group - control group = Same-Sex Marriage Script by Gay Canvasser group - No Contact group) is 0.09987463 points on the 1-5 feeling thermometer scale. Because the two groups were well balanced at baseline, this difference suggests a treatment effect. This indicates that a conversation with a gay canvasser group would have a small positive effect on attitudes towards same-sex marriage.
 
 # Part 2: The Forensic Discovery
+
+## 2.1: The Baseline Distribution
 
 ## Q2.1
 
 ```{r q2-1}
+# Load packages
+gay_r <- read_csv("data/raw/gayreshaped.csv")
+ccap <- read_csv("data/raw/ccap2012.csv")
+
 # Number of observations
 nrow(gay_r)
 nrow(ccap)
@@ -153,7 +187,9 @@ colnames(gay_r)
 colnames(ccap)
 ```
 
-The dataset `gayreshaped.csv` contains 11,948 observations and includes the variables study, treatment, therm1, therm2, therm3, and therm4. These thermometer variables represent attitudes toward gay men and lesbians measured across survey waves. The dataset `ccap2012.csv` contains 43,998 observations and includes the variables ...1, caseid, and gaytherm. The variable gaytherm represents feeling thermometer scores from a large national survey.
+The dataset `gayreshaped.csv` contains 11,948 observations and includes the variables study, treatment, therm1, therm2, therm3, and therm4. These thermometer variables represent attitudes toward gay men and lesbians measured across survey waves.
+
+The dataset `ccap2012.csv` contains 43,998 observations and includes the variables ...1 (row index), caseid, and gaytherm. The variable gaytherm represents feeling thermometer scores from a large national survey.
 
 ## Q2.2
 
@@ -163,6 +199,7 @@ study1_baseline <- gay_r |>
   filter(study == 1) |>
   pull(therm1)
 
+# Calculate mean, median, and SD for Study 1
 mean(study1_baseline)
 median(study1_baseline)
 sd(study1_baseline)
@@ -172,11 +209,14 @@ ccap_therm <- ccap |>
   filter(!is.na(gaytherm)) |>
   pull(gaytherm)
 
+# Calculate mean, median, and SD for CCAP data 
 mean(ccap_therm)
 median(ccap_therm)
 sd(ccap_therm)
 ```
-The Study 1 baseline thermometer has a mean of approximately 58.37625 and a standard deviation of 28.50288. The CCAP national survey thermometer has a mean of approximately 58.70517 and a standard deviation of 29.36892. The summary statistics are strikingly similar across the two datasets. Given that these are supposed to be independent samples collected separately, such close agreement in both mean and standard deviation is suspicious and suggests the two distributions may be unusually similar.
+The Study 1 baseline thermometer has a mean of 58.37625 and a standard deviation of 28.50288. The CCAP national survey thermometer has a mean of 58.70517 and a standard deviation of 29.36892.
+
+The summary statistics are incredibly similar across the two datasets. Given that these are supposed to be independent samples collected separately, such close agreement in both mean and standard deviation is suspicious and suggests the two distributions may be unusually similar.
 
 ## Q2.3
 
@@ -188,16 +228,19 @@ combined <- tibble(
     rep("LaCour Study 1 Baseline", length(study1_baseline)),
     rep("CCAP 2012 National Survey", length(ccap_therm))))
 
+# Create side-by-side historgrams
 ggplot(combined, aes(x = value)) +
   geom_histogram(breaks = seq(0, 100, by = 5), color = "black") +
-  facet_wrap(~ source) +
+  facet_wrap(~ source, scales = "free_y") +
   labs(
     title = "Comparison of Feeling Thermometer Distributions",
     x = "Feeling Thermometer (0–100)",
     y = "Count")
 ```
 
-The two histograms look strikingly similar in overall shape. Both distributions show similar clustering patterns across the 0–100 scale, including noticeable mass around common rounded values. Although the CCAP sample is larger (so the counts are higher), the underlying structure of the distributions appears nearly identical. Given that these datasets are supposed to come from independent samples collected separately, such close visual similarity is suspicious. It raises the possibility that the Study 1 baseline data may not have been independently collected.
+The two histograms look very similar in overall shape. Both distributions show similar clustering patterns across the 0-100 scale, including noticeable mass around common rounded values (approximately 50 and 100). Although the CCAP sample is much larger (so the counts are higher), the underlying structure of the distributions appears nearly identical. Given that these datasets are supposed to come from independent samples collected separately, such close visual similarity is suspicious. It raises the possibility that the Study 1 baseline data may not have been independently collected, and may have come from the same population.
+
+## 2.2: Re-test Reliability
 
 ## Q2.4
 
@@ -206,16 +249,21 @@ The two histograms look strikingly similar in overall shape. Both distributions 
 s1_control <- gay_r |>
   filter(study == 1, treatment == "No Contact")
 
+# Calculate the correlation between therm1 and therm2 for Study 1
 cor_s1 <- cor(s1_control$therm1, s1_control$therm2, use = "complete.obs")
+
+# Calculate the SD of within-person change for Study 1 (therm2 - therm1)
 sd_change_s1 <- sd(s1_control$therm2 - s1_control$therm1, na.rm = TRUE)
 
 # Study 2 control group
 s2_control <- gay_r |>
   filter(study == 2, treatment == "No Contact")
 
+# Calculate the correlation between therm1 and therm2 for Study 2
 cor_s2 <- cor(s2_control$therm1, s2_control$therm2, use = "complete.obs")
-sd_change_s2 <- sd(s2_control$therm2 - s2_control$therm1, na.rm = TRUE)
 
+# Calculate the SD of within-person change for Study 2 (therm2 - therm1)
+sd_change_s2 <- sd(s2_control$therm2 - s2_control$therm1, na.rm = TRUE)
 
 cor_s1
 sd_change_s1
@@ -224,22 +272,27 @@ cor_s2
 sd_change_s2
 ```
 
-In Study 1, the correlation between therm1 and therm2 in the control group is approximately  0.9975817, with a standard deviation of within-person change of about 1.987678. This suggests that individuals’ responses barely changed between waves and are almost perfectly predicted by their baseline responses. In contrast, Study 2 shows a correlation of approximately 0.9734449 and a standard deviation of change of about 6.605738. This pattern is consistent with real longitudinal survey data, where responses are highly but not perfectly correlated and individuals exhibit meaningful variation over time. The near-perfect correlation in Study 1 is implausibly high and strongly suggests that the follow-up data may have been artificially constructed from baseline responses.
+In Study 1, the correlation between therm1 and therm2 in the control group is 0.9975817, and the standard deviation of the within-person change (therm2 − therm1) is 1.987678. A re-test correlation this close to 1 implies that follow-up responses are almost perfectly determined by baseline responses, with virtually no independent variation. This is above the expected re-test correlation range of 0.95-0.97, and is suspicious. The extremely small standard deviation further suggests that individuals’ attitudes barely moved between waves. This number is too perfect, and thus should raise red flags (too close to 1).
+
+In contrast, Study 2 exhibits a correlation of 0.9734449 and a standard deviation of change of 6.605738. This pattern in the standard deviation is consistent with real longitudinal survey data, where responses are highly but not perfectly correlated over time. In real data, individuals may shift slightly due to genuine opinion change, measurement error, rounding, or other contextual factors. This fits within the re-test correlation range of 0.95-0.97, and is thus much more reasonable.
+
 
 ## Q2.5
 
 ```{r q2-5}
 library(patchwork)
 
+# Study 1 Scatter plot 
 p1 <- ggplot(s1_control, aes(x = therm1, y = therm2)) +
-  geom_point(alpha = 0.3) +
+  geom_point(alpha = 0.3, size = 0.8) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   labs(title = "Study 1 Control",
        x = "therm1",
        y = "therm2")
 
+# Study 2 Scatter plot 
 p2 <- ggplot(s2_control, aes(x = therm1, y = therm2)) +
-  geom_point(alpha = 0.3) +
+  geom_point(alpha = 0.3, size = 0.8) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   labs(title = "Study 2 Control",
        x = "therm1",
@@ -248,19 +301,27 @@ p2 <- ggplot(s2_control, aes(x = therm1, y = therm2)) +
 p1 + p2
 ```
 
-In the Study 1 control group, the scatter plot shows points lying almost perfectly on the 45-degree line, with extremely little variation around it. This suggests that therm2 is nearly identical to therm1 for most respondents. Such near-perfect replication is implausible in real survey data, where measurement error and minor opinion changes should introduce noticeable variation. In contrast, the Study 2 control group shows a clear positive relationship but with substantial scatter around the line. This pattern is consistent with real longitudinal data, where responses are strongly correlated over time but not perfectly stable. Study 2 therefore appears much more realistic.
+In the Study 1 control group, the scatter plot shows points lying almost perfectly on the 45-degree line, with extremely little variation around it. This suggests that therm2 is nearly identical to therm1 for most respondents. Such near-perfect replication is implausible in real survey data, since measurement error and minor opinion changes should introduce noticeable variation. Overall, there is not enough meaningful variation in Study 1.
+
+In contrast, the Study 2 control group shows a clear positive relationship but with substantial scatter around the line. This pattern is consistent with real data, where responses are strongly correlated over time but not perfectly stable. Study 2 therefore appears much more realistic.
+
+## 2.3: Putting It All Together
 
 ## Q2.6
 
-The evidence strongly suggests that Study 1’s data were fabricated rather than collected through a real experiment. First, the baseline distribution of feeling thermometer scores in Study 1 is strikingly similar to the CCAP national survey, with nearly identical means (58.38 vs. 58.71) and standard deviations (28.50 vs. 29.37). Given that these datasets were supposedly collected independently, such close agreement in both central tendency and dispersion is statistically unlikely and raises serious concerns about data independence.
+The evidence strongly suggests that Study 1’s data were fabricated rather than collected through a real experiment. 
 
-Second, the re-test correlation in the Study 1 control group is approximately 0.998, which is implausibly high for real longitudinal survey data. In contrast, Study 2 shows a more realistic correlation of 0.973. Real respondents’ answers typically fluctuate due to measurement error, rounding, and genuine opinion changes.
+First, the baseline distribution of feeling thermometer scores in Study 1 is strikingly similar to the CCAP national survey, with nearly identical means (58.37625 vs. 58.70517) and standard deviations (28.50288 vs. 29.36892) are too. Given that these datasets were supposedly collected independently, such close agreement in both central tendency and dispersion is statistically unlikely.
 
-Third, the standard deviation of within-person change in Study 1 is only about 1.99, compared to 6.61 in Study 2. This suggests that respondents’ follow-up responses in Study 1 barely changed from baseline, which is inconsistent with normal survey variability.
+Second, the re-test correlation in Study 1 is high. For Study 1, the control group is approximately  0.9975817, which is implausibly high for real survey data (above the expected 0.95-0.97 threshhold). Study 2 shows 0.9734449, but that is within the re-test ideal of 0.95-0.97. Real respondents’ answers typically fluctuate due to measurement error, rounding, and genuine opinion changes. 
 
-Taken together, these patterns strongly suggest that Study 1’s follow-up data were artificially generated from baseline values with minimal added noise. A fabricator attempting to create convincing data might copy a known national distribution and then add small random perturbations, inadvertently producing implausibly perfect correlations and unrealistically stable responses.
+Third, the standard deviation of within-person change in Study 1 is only about 1.987678, compared to 6.605738 in Study 2. This suggests that respondents’ follow-up responses in Study 1 barely changed from baseline, which is inconsistent with how normal surveys vary.
+
+Taken together, these patterns strongly suggest that Study 1’s follow-up data were artificially generated from baseline values. A fabricator attempting to create convincing experimental data would likely begin with a realistic baseline distribution, perhaps taken from an existing national survey such as the CCAP, to ensure that the data look plausible at first glance. Then they would add small random noise to increase the variations. This is also how they got caught because the changes are too small to be considered real. To simulate consistency, they might then generate follow-up responses by copying baseline values and adding only small random noise. This approach would produce data that appear stable and internally consistent but would inadvertently create statistical indications of fabrication such as an implausibly high re-test correlation (near 1.0) and extremely small within-person changes. Because real survey responses contain measurement error, rounding variation, and genuine shifts in opinion, artificially generated data tend to look “too clean” and overly precise. 
 
 # Part 3: What Real Data Looks Like
+
+## 3.1: Comparing Baselines
 
 ## Q3.1
 
@@ -282,7 +343,7 @@ study2 |>
     .groups = "drop")
 ```
 
-Study 2 contains 2,441 observations. At baseline, the mean thermometer score in the No Contact group is 57.88612 (SD = 28.69655), while the Same-Sex Marriage Script by Gay Canvasser group has a mean of 59.35057 (SD = 28.41578).
+Study 2 contains 2,441 observations. At baseline, the mean thermometer score in the No Contact group is 57.88612 (SD = 28.69655), while the Same-Sex Marriage Script by Gay Canvasser group has a mean of 59.35057 (SD = 28.41578). The number of people in the "no contact" group is 1203, and the number of people in the "Same-Sex Marriage Script by Gay Canvasser" group is 1238.
 
 The means are relatively close and the standard deviations are nearly identical, suggesting that the treatment and control groups in Study 2 are reasonably balanced at baseline.
 
@@ -306,15 +367,16 @@ baseline_combined <- tibble(
 
 ggplot(baseline_combined, aes(x = value)) +
   geom_histogram(breaks = seq(0, 100, by = 5), color = "black") +
-  facet_wrap(~ study) +
+  facet_wrap(~ study, scales = "free_y") +
   labs(
     title = "Baseline Thermometer Distributions: Study 1 vs Study 2",
     x = "Feeling Thermometer (0–100)",
     y = "Count")
 ```
 
-The baseline distributions in Study 1 and Study 2 differ visually. Study 1 shows sharper spikes at common values (particularly around 50 and 100), producing a more structured and patterned appearance. In contrast, Study 2’s distribution appears more irregular and uneven across bins. The Study 2 distribution looks more like typical survey data, with natural variability and less pronounced clustering. This contrast reinforces the earlier suspicion that Study 1’s data may have been artificially constructed.
+The baseline distributions in Study 1 and Study 2 do not differ very much visually, as they have similar shapes and have similar sharp spikes. Both study 1 and study 2 have the same spikes at approximately the values 50 and 100, but study 1 just has significantly more values than study 2. They have the same shape and the distributions, it is just a matter of scale. In this case, Study 2 shows somewhat more natural variation considering the size, but overall, they are eerily similar.
 
+## 3.2: Checking Balance and Comparing Outcomes in Study 2
 
 ## Q3.3
 
@@ -331,6 +393,7 @@ study2_comp <- study2 |>
 
 study2_comp
 ```
+
 ```{r q3-3-std}
 m_t_s2 <- study2_comp$mean_therm1[study2_comp$treatment == "Same-Sex Marriage Script by Gay Canvasser"]
 m_c_s2 <- study2_comp$mean_therm1[study2_comp$treatment == "No Contact"]
@@ -343,7 +406,7 @@ std_diff_s2 <- (m_t_s2 - m_c_s2) / sqrt((s_t_s2^2 + s_c_s2^2)/2)
 std_diff_s2
 ```
 
-The standardized difference in baseline thermometer scores between the treatment and control groups in Study 2 is 0.05128243. This is well below the 0.25 threshold typically used to assess balance in randomized experiments. This suggests that Study 2 exhibits good baseline balance between groups. Unlike Study 1, however, the balance in Study 2 appears realistic rather than implausibly perfect.
+First, I computed a standardized difference in means test. The standardized difference in baseline thermometer scores between the treatment and control groups in Study 2 is 0.05128243. This is well below the 0.25 threshold typically used to assess balance in randomized experiments. This suggests that Study 2 exhibits good baseline balance between groups. 
 
 ## Q3.4
 
@@ -355,9 +418,13 @@ study2 |>
   summarize(
     mean_therm2 = mean(therm2, na.rm = TRUE),
     .groups = "drop")
+
+61.20311-57.63523	
 ```
 
-In Study 2, the mean post-treatment thermometer score (therm2) is 57.63523 in the No Contact group and 61.20311 in the Same-Sex Marriage Script by Gay Canvasser group. The difference in post-period means (treated minus control) is 3.56788 points. This suggests a positive treatment effect in Study 2, though we must assess the uncertainty around this estimate before drawing strong conclusions.
+In Study 2, the mean post-treatment thermometer score (therm2) is 57.63523 in the No Contact group and 61.20311 in the Same-Sex Marriage Script by Gay Canvasser group. The difference in post-period means (treated minus control) is 3.56788 points on the 1-5 feeling thermometer scale. This suggests a positive difference between the no contact and same-sex marriage by gay canvasser group in Study 2, though we must assess the uncertainty around this estimate before drawing strong conclusions.
+
+## 3.3: Uncertainty Around the Difference
 
 ## Q3.5
 
@@ -370,8 +437,7 @@ study2_var <- study2 |>
   summarize(
     var_therm2 = var(therm2, na.rm = TRUE),
     n = n(),
-    .groups = "drop"
-  )
+    .groups = "drop")
 
 study2_var
 ```
@@ -395,7 +461,9 @@ lower
 upper
 ```
 
-The standard error of the difference in means is 1.160643. The 95% confidence interval for the treatment effect is (1.293019, 5.842741). Because this confidence interval does not include zero, we reject the null hypothesis of no difference between groups. This suggests that the treatment effect in Study 2 is statistically significant at the 0.05 level.
+The standard error of the difference in means is 1.293019. The 95% confidence interval for the treatment effect is (1.160643, 5.842741) on the feeling thermometer scale. Because this confidence interval does not include zero, we reject the null hypothesis of there being no difference between groups. The confidence interval is roughly between 1 and 6 points on the feeling thermometer scale. This suggests that the treatment effect in Study 2 is statistically significant at the 0.05 level. This indicates that if we were to randomly repeat the sampling procedure, the true value of the average treatment effect would exist in 95% of the intervals constructed.
+
+## 3.4: Tracking Attitudes Over Time
 
 ## Q3.6
 
@@ -413,17 +481,19 @@ cor_13
 cor_14
 ```
 
-In the Study 2 control group, the correlation between therm1 and therm2 is 0.9734449, between therm1 and therm3 is 0.9594085, and between therm1 and therm4 is 0.9709017. The correlations remain high over time, indicating that attitudes are relatively stable. However, they are not perfect and show some variation across waves. This pattern is consistent with real longitudinal survey data, where responses are strongly correlated but subject to measurement error and genuine changes over time.
+In the Study 2 control group, the correlation between therm1 and therm2 is 0.9734449, between therm1 and therm3 is 0.9594085, and between therm1 and therm4 is 0.9709017.
+
+The correlations remain high over time, indicating that attitudes are relatively stable. However, they are not perfect and show some variation across the waves. This pattern is consistent with real survey data, where responses are strongly correlated but subject to measurement error and genuine changes over time.
 
 ## Q3.7
 
-Study 2 differs from Study 1 in several important ways. In Study 2, the re-test correlation in the control group is approximately 0.973 rather than 0.998, and the standard deviation of within-person change is about 6.61 rather than 1.99. These values are consistent with realistic longitudinal survey data, where responses are highly but not perfectly stable and individuals exhibit meaningful variation over time.
+Study 2 differs from Study 1 in several important ways. In Study 2, the re-test correlation in the control group is approximately 0.973 compared to 0.998, and the standard deviation of within-person change is about 6.61 rather than 1.99. These values are consistent with realistic survey data, where responses are highly but not perfectly stable and individuals show meaningful variation over time. In contrast, Study 1’s near-perfect re-test correlation and very small within-person change suggest that follow-up responses were artificially made from baseline values. Real treatment effects are typically modest and embedded within substantial individual-level variability, as seen in Study 2’s effect of approximately 3.57 points on the feeling thermometer scale.
 
-In contrast, Study 1’s near-perfect re-test correlation and minimal within-person change suggest that follow-up responses were artificially constructed from baseline values. Real treatment effects are typically modest and embedded within substantial individual-level variability, as seen in Study 2’s effect of approximately 3.57 points alongside realistic dispersion and measurement noise.
-
-This case demonstrates that simple measurement tools — including means, standard deviations, histograms, and correlations — are powerful diagnostic instruments. By carefully examining distributional patterns and re-test reliability, researchers were able to detect statistical irregularities that ultimately revealed fabricated data.
+This case demonstrates that simple measurement tools, including means, scatter plots, standard deviations, histograms, and correlations, are powerful diagnostic instruments when combined together. Looking at all of the different instruments together, I can confirm through calculations and visualizations that the study was fabricated. Using simple tools can help us catch lies in social science because it reveals irregularities in survey data. 
 
 # Part 4: Formalizing the Evidence with Regression
+
+## Regression as a Fraud Detector
 
 ## Q4.1
 
@@ -437,7 +507,7 @@ fit_s1 <- lm(therm2 ~ therm1, data = s1_control)
 summary(fit_s1)
 ```
 
-In Study 1, the estimated slope is 0.992454, the R-squared is 0.9952, and the residual standard error is 1.976. This indicates that therm1 almost perfectly predicts therm2, with baseline attitudes explaining more than 99% of the variation in follow-up attitudes. Such an extremely high R-squared and near-unit slope are implausible in real survey data. This regression result reinforces the earlier finding that Study 1’s follow-up responses appear to be nearly exact copies of baseline responses.
+In Study 1, the estimated slope is 0.992454, the R-squared is 0.9952, and the residual standard error is 1.976. This indicates that therm1 almost perfectly predicts therm2, with baseline attitudes explaining more than 99% of the variation in follow-up attitudes. Such an extremely high R-squared and slope near 1 is implausible in real survey data. This regression result reinforces the earlier finding that Study 1’s follow-up responses appear to be nearly exact copies of baseline responses.
 
 ## Q4.2
 
@@ -451,7 +521,9 @@ fit_s2 <- lm(therm2 ~ therm1, data = s2_control)
 summary(fit_s2)
 ```
 
-In Study 2, the slope is 0.968662, the R-squared is 0.9476, and the residual standard error is 6.547. Compared to Study 1, the slope is meaningfully below 1, the R-squared is lower, and the residual variability is substantially larger. This pattern is consistent with real longitudinal survey data, where regression to the mean occurs and responses are not perfectly stable. In contrast, Study 1 showed a slope near 1 and an R-squared of 0.995, suggesting that therm2 was almost mechanically determined by therm1. The regression analysis therefore formalizes the earlier conclusion that Study 1’s data are implausibly perfect, while Study 2’s data appear realistic.
+In Study 2, the slope is 0.968662, the R-squared is 0.9476, and the residual standard error is 6.547. Compared to Study 1, the slope is meaningfully below 1, the R-squared is lower, and the residual variability is substantially larger. This pattern is consistent with real survey data, where regression to the mean occurs and responses are not perfectly stable. In contrast, Study 1 showed a slope near 1 and an R-squared of 0.995, suggesting that therm2 was almost mechanically determined by therm1. The regression analysis therefore supports the earlier conclusion that Study 1’s data is implausibly perfect, while Study 2’s data is realistic.
+
+## 4.2: Comparing Groups with Regression
 
 ## Q4.3
 
@@ -467,7 +539,7 @@ fit_group <- lm(therm2 ~ treated, data = study2_tc)
 summary(fit_group)
 ```
 
-The coefficient on treated is 3.5679, with a standard error of 1.2423, a t-statistic of 2.872, and a p-value of 0.00412 This matches the earlier difference in means of approximately 3.57 points, confirming that a regression with a binary treatment indicator reproduces the difference in group means. The intercept estimates the mean of the control group (57.6352). The coefficient on treated represents the average difference between the treatment and control groups. Because the p-value is below 0.05, the treatment effect is statistically significant at the 5% level.
+The coefficient on treated is 3.5679, with a standard error of 1.2423, a t-statistic of 2.872, and a p-value of 0.00412 This matches the earlier difference in means of approximately 3.57 points, confirming that a regression with a binary treatment indicator reproduces the difference in group means. The intercept estimates the mean of the control group (57.6352). The coefficient on treated represents the average difference between the treatment and control groups. Because the p-value is below an alpha level of 0.05, the treatment effect is statistically significant.
 
 ## Q4.4
 
@@ -475,9 +547,11 @@ The coefficient on treated is 3.5679, with a standard error of 1.2423, a t-stati
 fit_control <- lm(therm2 ~ treated + therm1, data = study2_tc)
 
 summary(fit_control)
+
+(1.2423-0.341052)/1.2423
 ```
 
-When controlling for baseline attitudes (therm1), the estimated treatment effect decreases from 3.5679 to 2.458857 points. The standard error also decreases substantially, from about 1.2423 to 0.341052, greatly improving precision. The treatment effect remains statistically significant (p < 0.001). Controlling for baseline attitudes improves precision because therm1 strongly predicts therm2. By accounting for where individuals started, the regression removes a large portion of unexplained variation in follow-up attitudes. This reduces residual variance and leads to a smaller standard error for the treatment effect.
+When controlling for baseline attitudes (therm1), the estimated treatment effect decreases from 3.5679 to 2.458857 points. The standard error also decreases substantially, from 1.2423 to 0.341052, greatly improving precision by 72.54673%. The treatment effect remains statistically significant (p value is less 0.001). Controlling for baseline attitudes improves precision because therm1 strongly predicts therm2. By accounting for where individuals started, the regression removes a large portion of unexplained variation in follow-up attitudes. This reduces residual variance and leads to a smaller standard error for the treatment effect.
 
 ## Q4.5
 
@@ -495,5 +569,5 @@ pred_B
 pred_A - pred_B
 ```
 
-The R-squared increases dramatically from 0.003857 in the model without baseline controls to approximately 0.925 when therm1 is included. This indicates that baseline attitudes explain the vast majority of variation in follow-up attitudes, while the treatment explains only a small portion. Using the controlled regression model, the predicted Wave 2 score for a treated respondent with therm1 = 50 is 52.47638, while the predicted score for a control respondent with the same baseline is approximately 50.01752. The predicted difference is 2.458857 points, which matches the estimated treatment coefficient. This confirms that the coefficient on treated represents the expected difference between otherwise identical individuals who differ only in treatment status.
+The R-squared increases dramatically from 0.003857 in the model without baseline controls to approximately 0.925 when therm1 is included. This indicates that baseline attitudes explain the vast majority of variation in follow-up attitudes, while the treatment explains only a small portion. Using the controlled regression model, the predicted Wave 2 score for Person A with therm1 = 50 is 52.47638, while the predicted score for Person B with the same baseline is  50.01752. The predicted difference is 2.458857 points on the feeling thermometer scale, which matches the estimated treatment coefficient. In other words, for these two people that started on the same baseline of therm1 = 50, the model predicts that the treated person, person A, would have a feeling thermometer score 2.458857 points higher than the control group person, person B. 
 
