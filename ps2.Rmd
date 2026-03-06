@@ -187,9 +187,9 @@ colnames(gay_r)
 colnames(ccap)
 ```
 
-The dataset `gayreshaped.csv` contains 11,948 observations and includes the variables study, treatment, therm1, therm2, therm3, and therm4. These thermometer variables represent attitudes toward gay men and lesbians measured across survey waves.
+The dataset `gayreshaped.csv` contains 11,948 observations and includes the variables study, treatment, therm1, therm2, therm3, and therm4. These thermometer variables represent attitudes toward gay men and lesbians measured across survey waves. There are 6 columns.
 
-The dataset `ccap2012.csv` contains 43,998 observations and includes the variables ...1 (row index), caseid, and gaytherm. The variable gaytherm represents feeling thermometer scores from a large national survey.
+The dataset `ccap2012.csv` contains 43,998 observations and includes the variables ...1 (row index), caseid, and gaytherm. The variable gaytherm represents feeling thermometer scores from a large national survey. There are 3 columns.
 
 ## Q2.2
 
@@ -272,7 +272,7 @@ cor_s2
 sd_change_s2
 ```
 
-In Study 1, the correlation between therm1 and therm2 in the control group is 0.9975817, and the standard deviation of the within-person change (therm2 − therm1) is 1.987678. A re-test correlation this close to 1 implies that follow-up responses are almost perfectly determined by baseline responses, with virtually no independent variation. This is above the expected re-test correlation range of 0.95-0.97, and is suspicious. The extremely small standard deviation further suggests that individuals’ attitudes barely moved between waves. This number is too perfect, and thus should raise red flags (too close to 1).
+In Study 1, the correlation between therm1 and therm2 in the control group is 0.9975817, and the standard deviation of the within-person change (therm2 - therm1) is 1.987678. A re-test correlation this close to 1 implies that follow-up responses are almost perfectly determined by baseline responses, with virtually no independent variation. This is above the expected re-test correlation range of 0.95-0.97, and is suspicious. The extremely small standard deviation further suggests that individuals’ attitudes barely moved between waves. This number is too perfect, and thus should raise red flags (too close to 1).
 
 In contrast, Study 2 exhibits a correlation of 0.9734449 and a standard deviation of change of 6.605738. This pattern in the standard deviation is consistent with real longitudinal survey data, where responses are highly but not perfectly correlated over time. In real data, individuals may shift slightly due to genuine opinion change, measurement error, rounding, or other contextual factors. This fits within the re-test correlation range of 0.95-0.97, and is thus much more reasonable.
 
@@ -406,6 +406,7 @@ std_diff_s2 <- (m_t_s2 - m_c_s2) / sqrt((s_t_s2^2 + s_c_s2^2)/2)
 std_diff_s2
 ```
 
+
 First, I computed a standardized difference in means test. The standardized difference in baseline thermometer scores between the treatment and control groups in Study 2 is 0.05128243. This is well below the 0.25 threshold typically used to assess balance in randomized experiments. This suggests that Study 2 exhibits good baseline balance between groups. 
 
 ## Q3.4
@@ -433,6 +434,7 @@ In Study 2, the mean post-treatment thermometer score (therm2) is 57.63523 in th
 study2_var <- study2 |>
   filter(treatment %in% c("Same-Sex Marriage Script by Gay Canvasser",
                           "No Contact")) |>
+  filter(!is.na(therm2)) |> 
   group_by(treatment) |>
   summarize(
     var_therm2 = var(therm2, na.rm = TRUE),
@@ -461,7 +463,8 @@ lower
 upper
 ```
 
-The standard error of the difference in means is 1.293019. The 95% confidence interval for the treatment effect is (1.160643, 5.842741) on the feeling thermometer scale. Because this confidence interval does not include zero, we reject the null hypothesis of there being no difference between groups. The confidence interval is roughly between 1 and 6 points on the feeling thermometer scale. This suggests that the treatment effect in Study 2 is statistically significant at the 0.05 level. This indicates that if we were to randomly repeat the sampling procedure, the true value of the average treatment effect would exist in 95% of the intervals constructed.
+
+The standard error of the difference in means is 1.242138. The 95% confidence interval for the treatment effect is (1.133289, 6.002471) on the feeling thermometer scale. Because this confidence interval does not include zero, we reject the null hypothesis of there being no difference between groups. The confidence interval is roughly between 1 and 6 points on the feeling thermometer scale. This suggests that the treatment effect in Study 2 is statistically significant at the 0.05 level. This indicates that if we were to randomly repeat the sampling procedure, the true value of the average treatment effect, or the true proportion, would exist in 95% of the confidence intervals constructed.
 
 ## 3.4: Tracking Attitudes Over Time
 
